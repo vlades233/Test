@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<head>
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<title>Nastolniy pemis!</title>
+
+	<!--<script src='https://stemkoski.github.io/AR-Examples/js/three.js'></script>-->
+	<!-- include jsartookit -->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/jsartoolkit5/artoolkit.min.js"></script>-->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/jsartoolkit5/artoolkit.api.js"></script>-->
+	<!-- include threex.artoolkit -->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/threex/threex-artoolkitsource.js"></script>-->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/threex/threex-artoolkitcontext.js"></script>-->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/threex/threex-arbasecontrols.js"></script>-->
+	<!--<script src="https://stemkoski.github.io/AR-Examples/threex/threex-armarkercontrols.js"></script>-->
+		<script src='js/three.js'></script>
+
+	<script src="js/artoolkit.min.js"></script>
+	<script src="js/artoolkit.api.js"></script>
+	
+	<script src="js/threex-artoolkitsource.js"></script>
+	<script src="js/threex-artoolkitcontext.js"></script>
+	<script src="js/threex-arbasecontrols.js"></script>
+	<script src="js/threex-armarkercontrols.js"></script>
+</head>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<!-- 
+  Example created by Lee Stemkoski: https://github.com/stemkoski
+  Based on the AR.js library and examples created by Jerome Etienne: https://github.com/jeromeetienne/AR.js/
+-->
+
+<script>
+
+var scene, camera, renderer, clock, deltaTime, totalTime;
+
+var arToolkitSource, arToolkitContext;
+
+var markerRoot1, markerRoot2;
+
+var mesh1;
+
+var canvas;
+var canvasContext;
+var ballX = 50;
+var ballY = 50;
+var ballSpeedX = 8;
+var ballSpeedY = 8;
+    
+var player1Score = 0;
+var player2Score = 0;
+const winningScore = 3;    
+var winScreen = false;   
+
+var paddleRightY = 250;    
+var paddleLeftY = 250;
+var paddleHeight = 100; 
+var paddleWidth = 10;
+
+initialize();
+animate();
+// setInterval(function() { console.log(markerRoot1.position.y) }, 1000); -->
+// setInterval(function() { console.log(calculateMousePos()) }, 1000); -->
+
+window.onload = function() {
+	canvas = document.getElementById('gameCanvas');
+	canvasContext = canvas.getContext('2d');
+
+	var framesPerSecond = 30;
+	setInterval(function() {
+			moveEverything();
+			drawEverything();	
+		}, 1000/framesPerSecond);
+    
+	
+        setInterval(function(){
+        let mousePos = calculateMousePos1();
+		paddleLeftY = mousePos.y - (paddleHeight/2);
+		console.log(paddleLeftY);
+	    },16); 
+		
+		setInterval(function(){
+        let mousePos = calculateMousePos2();
+		paddleRightY = mousePos.y - (paddleHeight/2);
+		console.log(paddleRightY);
+	    },16); 
+		
+    canvas.addEventListener('mousedown', 
+        function(evt){
+            if(winScreen){
+               winScreen = false;
+               player1Score = 0;
+               player2Score = 0; 
+            }
+        });
+}
+
+// left paddle    
+function calculateMousePos1(){
+    let rect = canvas.getBoundingClientRect();
+    let root = document.documentElement;
+	let mouse = createVector(markerRoot1.position.x, markerRoot1.position.y, markerRoot1.position.z, camera, 800, 600);
+    let mouseY = mouse.y - rect.top - root.scrollTop;
+    return {
+        y:mouseY
+    };
+}
+//right paddle
+function calculateMousePos2(){
+    var rect = canvas.getBoundingClientRect();
+    var root = document.documentElement;
+	var mouse = createVector(markerRoot2.position.x, markerRoot2.position.y, markerRoot2.position.z, camera, 800, 600);
+    var mouseY = mouse.y - rect.top - root.scrollTop;
+    return {
+        y:mouseY
+    };
+}
+    
+//right paddle (computer)  
+//function computerMovement(){
+//    var centrePaddleRight = paddleRightY + (paddleHeight/2);
+//    if (centrePaddleRight < ballY - 35){
+//        paddleRightY += 7;
+//    } else if (centrePaddleRight > ballY + 35){
+//        paddleRightY -= 7;
+//    }
+//}
+
+// Reset ball and change direction
+function ballReset(){
+    if (player1Score > winningScore || player2Score > winningScore){
+        winScreen = true;
+    }
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballSpeedX =- ballSpeedX;
+}
+
+function moveEverything() {
+    if(winScreen){
+        return;
+    }
+//  computerMovement();    
+	ballX += ballSpeedX;
+    ballY += ballSpeedY;
+    
+    if (ballX > canvas.width){
+        if( ballY > paddleRightY &&
+            ballY < paddleRightY + paddleHeight ){
+                 ballSpeedX =- ballSpeedX;
+                // vary angle of ball when edge of paddle
+                 deltaY = ballY - (paddleRightY + paddleHeight/2);
+                 ballSpeedY = deltaY * 0.25;
+            } else {
+                player1Score ++;
+                ballReset();  
+            }    
+    }
+    if (ballX < 0){
+        if( ballY > paddleLeftY &&
+            ballY < paddleLeftY + paddleHeight ){
+                 ballSpeedX =- ballSpeedX;
+            
+                 // vary angle of ball when edge of paddle
+                 deltaY = ballY - (paddleLeftY + paddleHeight/2);
+                 ballSpeedY = deltaY * 0.25;
+            } else {
+                player2Score ++;
+                ballReset(); 
+            }    
+    }
+    if (ballY > canvas.height){
+        ballSpeedY =- ballSpeedY;
+    }
+    if (ballY < 0){
+        ballSpeedY =- ballSpeedY;
+    }
+}
+    
+// Canvas rectangles   
+function colourRect(leftX, topY, width, height, bColour){
+    canvasContext.fillStyle = bColour;
+	canvasContext.fillRect(leftX, topY, width, height);
+} 
+
+// canvas circle
+function colourCircle(centerX, centerY, rad, bColour){
+    canvasContext.fillStyle = bColour;
+    canvasContext.beginPath();
+    canvasContext.arc(centerX, centerY, rad, 0, 2*Math.PI, true);
+    canvasContext.fill();
+}
+
+// canvas net
+function gamenet(){
+    for(var i=0; i<canvas.height; i+=20){
+        colourRect(canvas.width/2-1, i, 2, 10, 'white');
+    }
+}    
+    
+// Canvas parameters
+function drawEverything() {
+    
+    if(winScreen){    
+        colourRect(0, 0, canvas.width, canvas.height, 'black');
+        canvasContext.font="30px Arial";
+        canvasContext.fillStyle = 'white';
+        canvasContext.fillText("F5 to restart the game", 260, canvas.height/2);
+        
+        if (player1Score > winningScore){
+            canvasContext.fillText("Left Player Won", 280, 100);
+        } else if (player2Score > winningScore){
+            canvasContext.fillText("Right Player Won", 280, 100);
+        }
+        
+        return;
+    }
+    
+	colourRect(0, 0, canvas.width, canvas.height, 'black');
+    // net
+    gamenet();
+    // left paddle
+    colourRect(0,paddleLeftY, paddleWidth, paddleHeight, 'white');
+    // right paddle
+    colourRect(canvas.width - paddleWidth, paddleRightY, paddleWidth, paddleHeight, 'white');
+    // ball
+    colourCircle(ballX, ballY, 10, 'red');
+    
+    //scores
+    canvasContext.font="30px Arial";
+    canvasContext.fillText(player1Score, 100, 100);
+    canvasContext.fillText(player2Score, canvas.width-120, 100)
+}
+
+
+function initialize()
+{
+	scene = new THREE.Scene();
+
+	let ambientLight = new THREE.AmbientLight( 0xcccccc, 0.5 );
+	scene.add( ambientLight );
+				
+	camera = new THREE.Camera();
+	scene.add(camera);
+
+	renderer = new THREE.WebGLRenderer({
+		antialias : true,
+		alpha: true
+	});
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	renderer.setSize( 640, 480 );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	clock = new THREE.Clock();
+	deltaTime = 0;
+	totalTime = 0;
+	
+	////////////////////////////////////////////////////////////
+	// setup arToolkitSource
+	////////////////////////////////////////////////////////////
+
+	arToolkitSource = new THREEx.ArToolkitSource({
+		sourceType : 'webcam',
+	});
+
+	function onResize()
+	{
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if ( arToolkitContext.arController !== null )
+		{
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	});
+	
+	// handle resize event
+	window.addEventListener('resize', function(){
+		onResize()
+	});
+	
+	////////////////////////////////////////////////////////////
+	// setup arToolkitContext
+	////////////////////////////////////////////////////////////	
+
+	// create atToolkitContext
+	arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: 'data/camera_para.dat',
+		detectionMode: 'mono'
+	});
+	
+	// copy projection matrix to camera when initialization complete
+	arToolkitContext.init( function onCompleted(){
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	});
+
+	////////////////////////////////////////////////////////////
+	// setup markerRoots
+	////////////////////////////////////////////////////////////
+
+	// build markerControls
+	markerRoot1 = new THREE.Group();
+	scene.add(markerRoot1);
+	markerRoot2 = new THREE.Group();
+	scene.add(markerRoot2);
+	
+	
+	let markerControls1 = new THREEx.ArMarkerControls(arToolkitContext, markerRoot1, {
+		type: 'pattern', patternUrl: "data/hiro.patt",
+	})
+	let markerControls2 = new THREEx.ArMarkerControls(arToolkitContext, markerRoot2, {
+		type: 'pattern', patternUrl: "data/kanji.patt",
+	})
+
+	let geometry1	= new THREE.CubeGeometry(1,1,1);
+	let material1	= new THREE.MeshNormalMaterial({
+		transparent: true,
+		opacity: 0.5,
+		side: THREE.DoubleSide
+	}); 
+	
+	let geometry2	= new THREE.CubeGeometry(1,1,1);
+	let material2	= new THREE.MeshNormalMaterial({
+		transparent: true,
+		opacity: 0.5,
+		side: THREE.DoubleSide
+	}); 
+	
+	mesh1 = new THREE.Mesh( geometry1, material1 );
+	mesh1.position.y = 0.5;
+	
+	mesh2 = new THREE.Mesh( geometry2, material2 );
+	mesh2.position.y = 0.5;
+	
+	markerRoot1.add( mesh1 );
+	markerRoot2.add( mesh2 );
+}
+
+
+function update()
+{
+	// update artoolkit on every frame
+	if ( arToolkitSource.ready !== false )
+		arToolkitContext.update( arToolkitSource.domElement );
+}
+
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+
+function animate()
+{
+	requestAnimationFrame(animate);
+	deltaTime = clock.getDelta();
+	totalTime += deltaTime;
+	update();
+	render();
+}
+
+function createVector(x, y, z, camera, width, height) {
+        var p = new THREE.Vector3(x, y, z);
+        var vector = p.project(camera);
+
+        vector.y = -(vector.y - 1) / 2 * height;
+
+        return vector;
+}	
+</script>
+
+</body>
+</html>
