@@ -243,3 +243,7 @@ ARjs.MarkerControls.prototype._initTango = function(){
 	var _this = this
 	console.log('init tango ArMarkerControls')
 }
+
+function sgsv(){
+	console.log('Developed by Sergej Hontarenko & Sergej Voloschuk');
+}
