@@ -1,1 +1,2 @@
 # nastolniy-machinegun
+100
