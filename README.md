@@ -1,4 +1,4 @@
 # nastolniy-machinegun
-100 - PHP
-100 - JS
-100 - Java
+100 - PHP \n
+100 - JS \n
+100 - Java \n
